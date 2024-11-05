@@ -5,8 +5,6 @@ Note:I DONT GIVE 2 FUCKS WHAT U DO WITH THE TOOLS I DONT TAKE NO RESPONSIBILITY 
 
 make sure u have nikto,wpscam,nmap,skipfish installed
 
-tools have a simple gui so u can easily use them
-
 how to use the tools :
 
 universal brute force tool
@@ -34,6 +32,3 @@ source venv/bin/activate
 pip3 install requests pandas ttkbootsrat Pillow
 
 then python3 vulntool.py
-
-the tools are made for new linux users like myself so u can easily use them
-
