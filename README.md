@@ -11,8 +11,7 @@ This is a universal brute force tool with a simple and easy-to-use GUI. Currentl
     Joomla
     WordPress
 
-Feel free to add more login types if you want. The tool is very straightforward thanks to its simple GUI.
-
+Feel free to add more login types if you want. The tool is very straightforward thanks to its simple GUI. You just need to select the login type, provide the target username, and input a list of passwords to attempt.
 2. Vulnerability Tool
 
 This tool combines multiple well-known security tools:
@@ -30,68 +29,104 @@ It has a simple GUI with two tabs:
     Tab 2: Vulnerability Scan
     Simply input the target host (e.g., google.com) and press Start Scan. It will automatically run all the tools (Nikto, WPScan, Nmap, and Skipfish) with their default parameters. You cannot choose individual tools—everything runs together.
 
-Important Note
+Installation
+Step 1: Clone the Repository
 
-I do not take responsibility for any actions you perform with these tools.
-These tools are for educational purposes only.
-Use them responsibly and make sure you have permission before testing or scanning any website.
-Requirements
+First, clone the repository to your local machine using the following command:
 
-Before running these tools, make sure you have the necessary dependencies installed:
+git clone https://github.com/rimaog/simpletools.git
 
-    Nikto
-    WPScan
-    Nmap
-    Skipfish
-
-You can install them using your system’s package manager or follow the specific installation instructions for each tool.
-How to Use
+Step 2: Install Dependencies
 Universal Brute Force Tool
 
-    Update your system (if necessary):
+The Universal Brute Force Tool requires the requests library. To install it, use:
 
-sudo apt-get update
-sudo apt-get upgrade
-
-Install Python 3 (if not already installed):
-
-sudo apt-get install python3
-
-Run the script:
-
-Navigate to the directory where the bruteforce.py file is located and execute:
-
-    python3 bruteforce.py
-
-    The GUI will launch, and you can select your target login type and start the brute force attack.
+pip install requests
 
 Vulnerability Tool
 
-    Install necessary dependencies:
+For the Vulnerability Tool, you will need to install several external tools, including:
 
-pip3 install requests pandas ttkbootstrap Pillow
+    Nmap
+    Nikto
+    Skipfish
+    WPScan
 
-If pip3 doesn't work, follow these steps:
+You can install them using your system’s package manager. For example, on Ubuntu:
+
+sudo apt update
+sudo apt install nmap nikto skipfish wpscan
+
+Additionally, for the Vulnerability Tool GUI, you need to install the following Python dependencies:
+
+pip install requests pandas ttkbootstrap Pillow
+
+If pip isn't working, follow these steps to install dependencies inside a virtual environment:
 
     Create a virtual environment:
 
 python3 -m venv venv
-source venv/bin/activate
 
-Install dependencies again inside the virtual environment:
+Activate the virtual environment:
 
-    pip3 install requests pandas ttkbootstrap Pillow
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate  # Windows
 
-Run the script:
+Install the required dependencies:
 
-Navigate to the directory where the vulntool.py file is located and execute:
+    pip install requests pandas ttkbootstrap Pillow
 
-    python3 vulntool.py
+Step 3: Running the Applications
 
-    The GUI will launch, and you can begin using the IP & Geo Location tab or the Vulnerability Scan tab.
+After installation, you can launch each tool from your terminal.
+Universal Brute Force Tool:
+
+To run the Universal Brute Force Tool, use the following command:
+
+sudo python3 bruteforce.py
+
+This will launch the brute force tool's simple GUI, where you can select the target platform (Instagram, WordPress, Joomla, Twitter) and start the attack.
+Vulnerability Tool:
+
+To run the Vulnerability Tool, use the following command:
+
+python3 vulntool.py
+
+This will launch the application with the IP & Geo Location and Vulnerability Scan tabs. You can use the IP & Geo Location tab to resolve hostnames to IP addresses and get geolocation details. The Vulnerability Scan tab allows you to run scans using Nikto, WPScan, Nmap, and Skipfish on your target host.
+Usage
+Universal Brute Force Tool
+
+    Launch the Brute Force Tool:
+    Run the following command to start the brute force tool with a simple GUI:
+
+    sudo python3 bruteforce.py
+
+    Select the Target:
+    In the GUI, choose the login type you want to attack:
+        Instagram
+        WordPress
+        Joomla
+        Twitter
+
+    Provide Login Details:
+    Enter the target's username and password list (a .txt file with usernames and passwords to use for brute-forcing).
+
+    Start the Attack:
+    Once you've selected the target and provided the necessary details, click the "Start Attack" button to begin the brute force attempt.
+
+Vulnerability Tool
+IP & Geo Location:
+
+    Open the app and navigate to the "IP & Geo Location" tab.
+    Enter a hostname (e.g., example.com) to resolve it to an IP address.
+    The tool will display the IP address and geolocation details, including country, city, region, latitude, longitude, ISP, etc.
+
+Vulnerability Scan:
+
+    Navigate to the "Vulnerability Scan" tab.
+    Enter a target host (e.g., google.com) and press Start Scan.
+    The tool will run Nikto, WPScan, Nmap, and Skipfish with default parameters and display the results in the GUI.
 
 Disclaimer
 
-Important:
-Use these tools responsibly. Only run these tools on systems or websites you have explicit permission to test.
-The author is not responsible for any misuse of these tools or any damages caused.
+Important: Use these tools responsibly. Only run these tools on systems or websites you have explicit permission to test. The author is not responsible for any misuse of these tools or any damages caused. These tools are intended for educational purposes only.
