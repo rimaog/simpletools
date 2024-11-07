@@ -7,7 +7,6 @@ Tools Overview
 This is a universal brute force tool with a simple and easy-to-use GUI. Currently, it supports the following login types:
 
     Instagram
-    Twitter
     Joomla
     WordPress
 
@@ -106,7 +105,6 @@ Universal Brute Force Tool
         Instagram
         WordPress
         Joomla
-        Twitter
 
     Provide Login Details:
     Enter the target's username and password list (a .txt file with usernames and passwords to use for brute-forcing).
