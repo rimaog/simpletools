@@ -6,9 +6,15 @@ import logging
 import random
 import time
 import re
+import os
 
-# Configure logging
-logging.basicConfig(filename='brute_force_log.txt', level=logging.INFO, format='%(asctime)s - %(message)s')
+# Configure logging with rotation
+from logging.handlers import RotatingFileHandler
+
+log_handler = RotatingFileHandler('brute_force_log.txt', maxBytes=10*1024*1024, backupCount=3)
+log_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+logging.getLogger().addHandler(log_handler)
+logging.getLogger().setLevel(logging.INFO)
 
 # Sample User-Agent strings
 USER_AGENTS = [
@@ -143,6 +149,7 @@ class BruteForceLogin:
     def stop(self):
         """Stop the brute-force attack."""
         self.stop_attack = True
+
 
 class App:
     """Main application class for the GUI."""
