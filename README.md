@@ -1,130 +1,100 @@
 Simple Python Tools Collection
 
-Hello guys! Here are a couple of simple yet powerful Python scripts for your security toolkit. Below you'll find a brief description of each tool, how to install dependencies, and instructions on how to use them.
+This collection contains a few simple Python scripts that can help you with testing and learning about security. Below you'll find a summary of each tool, how to install dependencies, and instructions on how to use them.
 Tools Overview
 1. Universal Brute Force Tool
 
-This is a universal brute force tool with a simple and easy-to-use GUI. Currently, it supports the following login types:
+This tool tries different username and password combinations to log in to websites. Currently, it supports:
 
     Instagram
-    Joomla
     WordPress
+    Joomla
 
-Feel free to add more login types if you want. The tool is very straightforward thanks to its simple GUI. You just need to select the login type, provide the target username, and input a list of passwords to attempt.
 2. Vulnerability Tool
 
-This tool combines multiple well-known security tools:
+This tool combines multiple security tools to check for common issues on websites:
 
     Nikto
     Nmap
     WPScan
     Skipfish
 
-It has a simple GUI with two tabs:
+It has two features:
 
-    Tab 1: IP & Geo Location
-    This is a host-to-IP grabber. It also includes DNS history and can bypass Cloudflare with the appropriate API key.
-
-    Tab 2: Vulnerability Scan
-    Simply input the target host (e.g., google.com) and press Start Scan. It will automatically run all the tools (Nikto, WPScan, Nmap, and Skipfish) with their default parameters. You cannot choose individual tools—everything runs together.
+    IP & Geo Location — Find the IP address and location of a website.
+    Vulnerability Scan — Run basic security tests on a website.
 
 Installation
 Step 1: Clone the Repository
 
-First, clone the repository to your local machine using the following command:
+Clone the repository to your computer using the command:
 
 git clone https://github.com/rimaog/simpletools.git
+cd simpletools
 
 Step 2: Install Dependencies
-Universal Brute Force Tool
+For the Brute Force Tool:
 
-The Universal Brute Force Tool requires the requests library. To install it, use:
+Install the required Python libraries:
 
-pip install requests
+pip install requests aiohttp
 
-Vulnerability Tool
+If you are on Linux, also install the Tkinter library:
 
-For the Vulnerability Tool, you will need to install several external tools, including:
+sudo apt-get install python3-tk
 
-    Nmap
-    Nikto
-    Skipfish
-    WPScan
+For the Vulnerability Tool:
 
-You can install them using your system’s package manager. For example, on Ubuntu:
+    Install the required tools for scanning:
 
 sudo apt update
 sudo apt install nmap nikto skipfish wpscan
 
-Additionally, for the Vulnerability Tool GUI, you need to install the following Python dependencies:
+    Install the Python libraries for the GUI:
 
 pip install requests pandas ttkbootstrap Pillow
 
-If pip isn't working, follow these steps to install dependencies inside a virtual environment:
-
-    Create a virtual environment:
+If pip isn't working, you can use a virtual environment:
 
 python3 -m venv venv
-
-Activate the virtual environment:
-
 source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate  # Windows
+# venv\Scripts\activate  # Windows
+pip install requests pandas ttkbootstrap Pillow
 
-Install the required dependencies:
+Running the Applications
+Universal Brute Force Tool
 
-    pip install requests pandas ttkbootstrap Pillow
-
-Step 3: Running the Applications
-
-After installation, you can launch each tool from your terminal.
-Universal Brute Force Tool:
-
-To run the Universal Brute Force Tool, use the following command:
+To run the brute force tool:
 
 sudo python3 bruteforce.py
 
-This will launch the brute force tool's simple GUI, where you can select the target platform (Instagram, WordPress, Joomla, Twitter) and start the attack.
-Vulnerability Tool:
+This will open the GUI. You can select the website type (Instagram, WordPress, Joomla) and start the process.
+Vulnerability Tool
 
-To run the Vulnerability Tool, use the following command:
+To run the vulnerability tool:
 
 python3 vulntool.py
 
-This will launch the application with the IP & Geo Location and Vulnerability Scan tabs. You can use the IP & Geo Location tab to resolve hostnames to IP addresses and get geolocation details. The Vulnerability Scan tab allows you to run scans using Nikto, WPScan, Nmap, and Skipfish on your target host.
-Usage
+This will open the tool with two sections: IP & Geo Location and Vulnerability Scan.
+How to Use
 Universal Brute Force Tool
 
-    Launch the Brute Force Tool:
-    Run the following command to start the brute force tool with a simple GUI:
+    Open the tool by running:
 
     sudo python3 bruteforce.py
 
-    Select the Target:
-    In the GUI, choose the login type you want to attack:
-        Instagram
-        WordPress
-        Joomla
+    Choose the website type (Instagram, WordPress, Joomla).
 
-    Provide Login Details:
-    Enter the target's username and password list (a .txt file with usernames and passwords to use for brute-forcing).
+    Upload a list of usernames and passwords in .txt format.
 
-    Start the Attack:
-    Once you've selected the target and provided the necessary details, click the "Start Attack" button to begin the brute force attempt.
+    Click "Start Attack" to begin.
 
 Vulnerability Tool
-IP & Geo Location:
 
-    Open the app and navigate to the "IP & Geo Location" tab.
-    Enter a hostname (e.g., example.com) to resolve it to an IP address.
-    The tool will display the IP address and geolocation details, including country, city, region, latitude, longitude, ISP, etc.
+    IP & Geo Location: Enter a website address to find its IP and location.
 
-Vulnerability Scan:
-
-    Navigate to the "Vulnerability Scan" tab.
-    Enter a target host (e.g., google.com) and press Start Scan.
-    The tool will run Nikto, WPScan, Nmap, and Skipfish with default parameters and display the results in the GUI.
+    Vulnerability Scan: Enter a website address to check for basic security issues.
 
 Disclaimer
 
-Important: Use these tools responsibly. Only run these tools on systems or websites you have explicit permission to test. The author is not responsible for any misuse of these tools or any damages caused. These tools are intended for educational purposes only.
+Use these tools only on systems or websites you have permission to test. These tools are for educational purposes only. The author is not responsible for any misuse or damage caused.
