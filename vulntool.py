@@ -7,9 +7,29 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 from ttkbootstrap import Style
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 # Logger configuration
-logging.basicConfig(filename='host_to_ip.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(filename='host_to_ip.log', level=logging.DEBUG, format='%(asctime)s - %(message)s')
+
+class ToolChecker:
+    """Checks if the necessary tools are installed on the system."""
+    required_tools = ['nmap', 'nikto', 'skipfish', 'wpscan']
+
+    @classmethod
+    def check_tools(cls):
+        """Check if the required tools are installed."""
+        missing_tools = [tool for tool in cls.required_tools if not cls.is_tool_installed(tool)]
+        return (len(missing_tools) == 0, missing_tools)
+
+    @staticmethod
+    def is_tool_installed(tool):
+        """Check if a specific tool is installed."""
+        try:
+            subprocess.run([tool, '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False
 
 class IPGeolocation:
     API_URL = "http://ip-api.com/json/{}"
@@ -26,24 +46,32 @@ class IPGeolocation:
             return {}
 
 class Scanner:
+    """Handles the execution of scanning tools."""
+    def __init__(self):
+        self.executor = ThreadPoolExecutor(max_workers=4)
+
     def run_nmap(self, ip):
         """Run Nmap on the specified IP address."""
+        print("Running Nmap scan...")
         return self.execute_command(f"nmap -A -T4 -Pn {ip}")
 
     def run_skipfish(self, ip):
         """Run Skipfish on the specified IP address."""
+        print("Running Skipfish scan...")
         return self.execute_command(f"skipfish -o output_dir {ip}")
 
     def run_nikto(self, ip):
         """Run Nikto on the specified IP address."""
+        print("Running Nikto scan...")
         return self.execute_command(f"nikto -h {ip}")
 
     def run_wpscan(self, ip):
         """Run WPScan on the specified IP address."""
+        print("Running WPScan...")
         return self.execute_command(f"wpscan --url http://{ip}/ --no-banner")
 
     def execute_command(self, command):
-        """Execute the constructed command in the shell."""
+        """Execute the constructed command in the shell and return output."""
         try:
             process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
             output = process.stdout.strip() or f"Error: {process.stderr.strip()}"
@@ -54,12 +82,18 @@ class Scanner:
             return f"Execution error: {str(e)}"
 
 class R1MAHostToIPApp:
+    """The main application class to manage the user interface and scanning."""
     def __init__(self, root):
         self.root = root
         self.style = Style(theme='darkly')
         self.root.title("R1MA Host to IP")
         self.root.geometry("900x700")
         self.setup_gui()
+
+        # Check for required tools at the start
+        self.tools_installed, self.missing_tools = ToolChecker.check_tools()
+        if not self.tools_installed:
+            self.show_missing_tools_warning()
 
     def setup_gui(self):
         """Setup the main GUI components."""
@@ -88,8 +122,6 @@ class R1MAHostToIPApp:
         self.geo_output_area = scrolledtext.ScrolledText(ip_frame, width=80, height=20, wrap=tk.WORD)
         self.geo_output_area.grid(row=2, column=0, columnspan=2, pady=10)
 
-        ttk.Label(ip_frame, text="NOTE: This tool is strictly for educational purposes only.", font=("Arial", 10), foreground="red").grid(row=3, column=0, columnspan=2, pady=10)
-
     def setup_vulnerability_scan_tab(self):
         """Set up the vulnerability scan tab."""
         scan_frame = ttk.Frame(self.tab_control)
@@ -105,21 +137,50 @@ class R1MAHostToIPApp:
         self.scan_output_area = scrolledtext.ScrolledText(scan_frame, width=80, height=20, wrap=tk.WORD)
         self.scan_output_area.grid(row=2, column=0, columnspan=2, pady=10)
 
-        ttk.Label(scan_frame, text="NOTE: This tool is strictly for educational purposes only.", font=("Arial", 10), foreground="red").grid(row=3, column=0, columnspan=2, pady=10)
-
     def setup_footer(self):
         """Set up the footer section of the GUI."""
         footer_label = ttk.Label(self.main_frame, text="R1MA Host to IP Tool", font=("Helvetica", 10), background="black", foreground="white")
         footer_label.pack(side=tk.BOTTOM, pady=5)
 
+    def start_scan_thread(self):
+        """Start the scan in a new thread."""
+        self.start_scan_button.config(state='disabled')  # Disable button during scan
+        scan_thread = threading.Thread(target=self.run_all_scans_concurrently)
+        scan_thread.daemon = True  # Allow the thread to be killed when the main program exits
+        scan_thread.start()
+
+    def run_all_scans_concurrently(self):
+        """Run all available vulnerability scans concurrently."""
+        host = self.scan_target_entry.get().strip()
+        if not host:
+            self.log_message("Warning: Please enter a target host.", self.scan_output_area)
+            self.root.after(lambda: self.start_scan_button.config(state='normal'))  # Re-enable button
+            return
+
+        self.log_message("Starting all scans...", self.scan_output_area)
+
+        # Create a scanner object and run scans concurrently
+        scanner = Scanner()
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                "Nmap": executor.submit(scanner.run_nmap, host),
+                "Skipfish": executor.submit(scanner.run_skipfish, host),
+                "Nikto": executor.submit(scanner.run_nikto, host),
+                "WPScan": executor.submit(scanner.run_wpscan, host)
+            }
+
+            for tool_name, future in futures.items():
+                output = future.result()
+                self.log_message(f"{tool_name} Results:\n{output}\n", self.scan_output_area)
+
+        self.root.after(lambda: self.start_scan_button.config(state='normal'))  # Re-enable button
+
     def log_message(self, message, output_area):
         """Log messages to the specified output area and log file."""
+        print(message)  # Log to terminal as well
         timestamped_message = f"{message}\n"
-
-        # Schedule the output area update
         self.root.after(0, output_area.insert, tk.END, timestamped_message)
         self.root.after(0, output_area.see, tk.END)  # Scroll to the end
-
         logging.info(message)
 
     def lookup_ip(self):
@@ -140,55 +201,22 @@ class R1MAHostToIPApp:
                     f"Country: {geo_data['country']}\n"
                     f"Region: {geo_data['regionName']}\n"
                     f"City: {geo_data['city']}\n"
-                    f"ZIP: {geo_data['zip']}\n"
                     f"Latitude: {geo_data['lat']}\n"
                     f"Longitude: {geo_data['lon']}\n"
                     f"ISP: {geo_data['isp']}\n"
                 )
-                self.log_message(output, self.geo_output_area)
+                self.log_message(f"Geolocation Data:\n{output}", self.geo_output_area)
             else:
-                self.log_message(f"Failed to retrieve geolocation for {ip}.", self.geo_output_area)
+                self.log_message("Error: Could not retrieve geolocation data.", self.geo_output_area)
         except socket.gaierror:
-            messagebox.showerror("Error", "Could not resolve host to IP address.")
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {e}")
+            messagebox.showwarning("Error", "Failed to resolve hostname. Please check the input.")
 
-    def start_scan_thread(self):
-        """Start the scan in a new thread."""
-        self.start_scan_button.config(state='disabled')  # Disable button during scan
-        scan_thread = threading.Thread(target=self.run_all_scans)
-        scan_thread.start()
+    def show_missing_tools_warning(self):
+        """Show a warning message if any tools are missing."""
+        missing_tools = ", ".join(self.missing_tools)
+        messagebox.showwarning("Missing Tools", f"The following required tools are missing: {missing_tools}. Please install them before using this tool.")
 
-    def run_all_scans(self):
-        """Run all available vulnerability scans."""
-        host = self.scan_target_entry.get().strip()
-        if not host:
-            self.log_message("Warning: Please enter a target host.", self.scan_output_area)
-            self.root.after(lambda: self.start_scan_button.config(state='normal'))  # Re-enable button
-            return
-
-        self.log_message("Starting all scans...", self.scan_output_area)
-
-        scanner = Scanner()
-        
-        # Run all scans and log results
-        scan_methods = [
-            (scanner.run_nmap, "Nmap Output"),
-            (scanner.run_skipfish, "Skipfish Output"),
-            (scanner.run_nikto, "Nikto Output"),
-            (scanner.run_wpscan, "WPScan Output")
-        ]
-
-        for scan_method, name in scan_methods:
-            output = scan_method(host)
-            self.log_message(f"{name}:\n{output}\n", self.scan_output_area)
-
-        self.root.after(lambda: self.start_scan_button.config(state='normal'))  # Re-enable button
-
-def main():
+if __name__ == "__main__":
     root = tk.Tk()
     app = R1MAHostToIPApp(root)
     root.mainloop()
-
-if __name__ == "__main__":
-    main()
