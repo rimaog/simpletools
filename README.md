@@ -12,6 +12,7 @@ This is a universal brute force tool with a simple and easy-to-use GUI. Currentl
     WordPress
 
 Feel free to add more login types if you want. The tool is very straightforward thanks to its simple GUI.
+
 2. Vulnerability Tool
 
 This tool combines multiple well-known security tools:
